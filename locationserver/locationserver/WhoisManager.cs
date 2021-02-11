@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -7,7 +6,7 @@ namespace locationserver
 {
     public class WhoisManager
     {
-        public byte[] CreateResponse(string request, Dictionary<string,string> locationDict, ref string action)
+        public byte[] CreateResponse(string request, Dictionary<string, string> locationDict, ref string action)
         {
             if (request.Contains(' '))
             {
@@ -26,7 +25,7 @@ namespace locationserver
                 {
                     locationDict.Add(split[0], location);
                 }
-                //action = "\"POST " + split[0] + '"' + " OK";
+                action = "\"POST " + split[0] + '"' + " OK";
                 return Encoding.ASCII.GetBytes("OK\r\n");
             }
             else
@@ -36,15 +35,15 @@ namespace locationserver
                     //StringBuilder sb = new StringBuilder(30);
                     string name = request.Substring(0, request.Length - 2);
                     char[] response = new char[locationDict[name].Length + 2];
-                    for (int i = 0; i < response.Length-2; i++) { response[i] = locationDict[name][i]; }
+                    for (int i = 0; i < response.Length - 2; i++) { response[i] = locationDict[name][i]; }
                     response[response.Length - 2] = '\r';
                     response[response.Length - 1] = '\n';
-                    //action = "\"GET " + name + '"' + " Sent: " + locationDict[name];
+                    action = "\"GET " + name + '"' + " Sent: " + locationDict[name];
                     return Encoding.ASCII.GetBytes(response);
                 }
                 catch
                 {
-                    //action = "\"GET " + request.Substring(0, request.Length - 2) + '"' + " Sent: ERROR: no entries found";
+                    action = "\"GET " + request + '"' + " Sent: ERROR: no entries found";
                     return Encoding.ASCII.GetBytes("ERROR: no entries found\r\n");
                 }
             }

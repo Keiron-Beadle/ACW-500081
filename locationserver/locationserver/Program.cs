@@ -1,17 +1,14 @@
 ﻿using System;
-using System.Net.Sockets;
-using System.Threading;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
-using System.Runtime.InteropServices;
-using System.Net.NetworkInformation;
-using System.Net;
 using System.Text;
-using System.Diagnostics;
-using System.Windows.Forms;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace locationserver
 {
@@ -216,27 +213,52 @@ namespace locationserver
             switch (command)
             {
                 case "-p":
-                    port = int.Parse(args[index + 1]);
+                    try { port = int.Parse(args[index + 1]); }
+                    catch (IndexOutOfRangeException) { Console.WriteLine("You must enter a port number after the -p argument. -p is optional for port 43."); Exit(); }
+                    catch (FormatException) { Console.WriteLine("Please provide a valid integer port argument."); Exit(); }
                     index++;
                     break;
                 case "-t":
-                    timeout = int.Parse(args[index + 1]);
+                    try { timeout = int.Parse(args[index + 1]); }
+                    catch (IndexOutOfRangeException) { Console.WriteLine("You must enter a timeout number after the -t argument."); Exit(); }
+                    catch (FormatException) { Console.WriteLine("Please provide a valid integer timeout argument."); Exit(); }
                     index++;
                     break;
                 case "-d":
                     bDebug = true;
                     break;
                 case "-f":
-                    databaseDir = args[index + 1];
+                    try 
+                    { 
+                        databaseDir = args[index + 1];
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        databaseDir = Directory.GetCurrentDirectory() + "/database.db";
+                    }
                     bDatabase = true;
                     index++;
                     break;
                 case "-l":
-                    logDir = args[index + 1];
+                    try
+                    { 
+                        logDir = args[index + 1];
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        logDir = Directory.GetCurrentDirectory() + "server.log";
+                    }
                     bLog = true;
                     index++;
                     break;
             }
+        }
+
+        private static void Exit()
+        {
+            Console.WriteLine("Closing in 3 seconds.");
+            Thread.Sleep(3000);
+            Environment.Exit(0);
         }
 
         public static bool HasReadPermissions(string directory)

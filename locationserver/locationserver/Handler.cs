@@ -1,28 +1,31 @@
 ﻿using System;
-using System.Net.Sockets;
-using System.Threading;
 using System.IO;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace locationserver
 {
-    class RequestHandler 
+    class RequestHandler
     {
         private Protocol currentProtocol = Protocol.Whois;
 
         public void AcceptClient(Socket connection)
         {
+            //System.Diagnostics.Stopwatch s = new System.Diagnostics.Stopwatch();
+            //s.Start();
             NetworkStream socketStream;
             Console.WriteLine("Connection accepted...");
-            socketStream = new NetworkStream(connection);
-            socketStream.ReadTimeout = locationserver.timeout;
+            socketStream = new NetworkStream(connection)
+            {
+                ReadTimeout = locationserver.timeout
+            };
             string request = ReadRequest(socketStream);
             if (locationserver.bDebug)
                 Console.WriteLine("Request recevied from " + connection.RemoteEndPoint + "...");
             else
                 Console.WriteLine("Request received...");
-
+            //Console.WriteLine(request.Replace('\r', '0').Replace('\n', '0'));
             byte[] response;
             string action = "";
             if (currentProtocol == Protocol.Whois)
@@ -35,8 +38,9 @@ namespace locationserver
                 HttpManager manager = new HttpManager();
                 response = manager.CreateResponse(currentProtocol, request, locationserver.locationDict, ref action);
             }
-
             socketStream.Write(response, 0, response.Length);
+            //s.Stop();
+            //Console.WriteLine("pre flush: " + s.ElapsedMilliseconds + "ms / " + s.ElapsedTicks + " ticks");
             socketStream.Flush();
             if (locationserver.bDebug)
             {
@@ -59,7 +63,7 @@ namespace locationserver
                     }
                     catch
                     {
-                        Thread.Sleep(rnd.Next(50, 500));
+                        System.Threading.Thread.Sleep(rnd.Next(50, 500));
                     }
                 } while (!successfulWrite);
 
@@ -79,7 +83,7 @@ namespace locationserver
                 data = new byte[512];
                 try { bytes = ns.Read(data, 0, data.Length); }
                 catch (IOException) { break; }
-              
+
                 requestSB.Append(Encoding.ASCII.GetString(data));
                 if (bytes < 512) { break; }
             }
@@ -91,7 +95,7 @@ namespace locationserver
                 string[] headerArgs = request.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
                 for (int i = 0; i < headerArgs.Length; i++)
                 {
-                    if (headerArgs[i].Substring(0,3) == "GET")
+                    if (headerArgs[i].Substring(0, 3) == "GET")
                     {
                         return headerArgs[i];
                     }
@@ -112,7 +116,7 @@ namespace locationserver
             }
             catch { currentProtocol = Protocol.Whois; return; }
             string[] splitRequest = request.Split(new string[] { "\r\n" }, StringSplitOptions.None);
-            if (splitRequest[0].Contains("HTTP/1.0")) 
+            if (splitRequest[0].Contains("HTTP/1.0"))
             {
                 Regex getCheck = new Regex(@"GET \/\?([!-~])+ HTTP\/1.0(\r|\n|\r\n){2}");
                 Regex postCheck = new Regex(@"POST \/([!-~])+ HTTP\/1.0(\r|\n|\r\n)Content-Length: ([0-9])+(\r|\n|\r\n){2}([!-~]| )+");
@@ -124,7 +128,7 @@ namespace locationserver
                 Regex getCheck = new Regex(@"GET \/\?name=([!-~])+ HTTP\/1.1(\r|\n|\r\n)");
                 Regex postCheck = new Regex(@"POST \/ HTTP\/1.1(\r|\n|\r\n)Host: ([!-~])+(\r|\n|\r\n)Content-Length: ([0-9])+(\r|\n|\r\n){2}name=([!-~])+&location=([!-~]| )+");
                 if (getCheck.Matches(request).Count > 0 || postCheck.Matches(request).Count > 0)
-                    currentProtocol = Protocol.HTTP1; return; 
+                    currentProtocol = Protocol.HTTP1; return;
             }
             if (!chosen) { currentProtocol = Protocol.Whois; }
         }
