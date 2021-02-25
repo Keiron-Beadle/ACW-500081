@@ -8,7 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 
-namespace locationWPF
+namespace location
 {
     public partial class App : Application
     {

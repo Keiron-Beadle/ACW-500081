@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Net.Sockets;
 using System.IO;
+using System.Net.Sockets;
 
 namespace location
 {
@@ -11,19 +11,18 @@ namespace location
         HTTP0,
         HTTP1
     }
-    class location
-    {
 
+    class ConsoleWindow
+    {
         static Protocol currentProtocol = Protocol.Whois;
         static string address = "whois.net.dcs.hull.ac.uk";
         static int port = 43;
         static int timeout = 1000;
         static bool bDebug = false;
-
         static string person = "";
         static string personLocation = null;
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             ProcessArguments(args);
 
@@ -39,7 +38,7 @@ namespace location
                 Console.WriteLine("Timeout set to: " + client.ReceiveTimeout + "ms");
                 Console.WriteLine("Sent request: " + request);
             }
-            try 
+            try
             {
                 System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
                 sw.Start();
@@ -105,9 +104,9 @@ namespace location
                     }
                 }
                 catch (IndexOutOfRangeException)
-                { 
-                    if (nameFound) { personLocation = args[argIndex]; } 
-                    else { person = args[argIndex]; nameFound = true; } 
+                {
+                    if (nameFound) { personLocation = args[argIndex]; }
+                    else { person = args[argIndex]; nameFound = true; }
                 }
             }
         }
@@ -137,7 +136,7 @@ namespace location
                     index++;
                     break;
                 case "-t":
-                    try{ timeout = int.Parse(args[index + 1]); }
+                    try { timeout = int.Parse(args[index + 1]); }
                     catch (IndexOutOfRangeException) { Console.WriteLine("You must enter a timeout number after the -t argument."); Exit(); }
                     catch (FormatException) { Console.WriteLine("Please provide a valid integer timeout argument."); Exit(); }
                     index++;
@@ -154,5 +153,4 @@ namespace location
 
         private static void Exit() { Environment.Exit(0); }
     }
-
 }

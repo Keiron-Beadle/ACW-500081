@@ -3,9 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.1321
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "location", "location\location.csproj", "{9B31C2DF-A148-410B-9738-8F5FBD7EAF01}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "locationWPF", "locationWPF\locationWPF.csproj", "{A8CF5A0C-A93D-4DC1-94A2-1B63774D05EA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "location", "location\location.csproj", "{A8CF5A0C-A93D-4DC1-94A2-1B63774D05EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,10 +11,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{9B31C2DF-A148-410B-9738-8F5FBD7EAF01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9B31C2DF-A148-410B-9738-8F5FBD7EAF01}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9B31C2DF-A148-410B-9738-8F5FBD7EAF01}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9B31C2DF-A148-410B-9738-8F5FBD7EAF01}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A8CF5A0C-A93D-4DC1-94A2-1B63774D05EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A8CF5A0C-A93D-4DC1-94A2-1B63774D05EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8CF5A0C-A93D-4DC1-94A2-1B63774D05EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -26,6 +20,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {AB07B9FD-0DAD-4A40-A88F-5FE12119CEDC}
+		SolutionGuid = {EDC5F04B-2A75-4E5F-89FA-C6160A72E904}
 	EndGlobalSection
 EndGlobal

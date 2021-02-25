@@ -12,7 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace locationWPF
+namespace location
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

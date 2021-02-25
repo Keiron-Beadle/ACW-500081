@@ -1,7 +1,7 @@
-﻿<Application x:Class="locationWPF.App"
+﻿<Application x:Class="location.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:locationWPF"
+             xmlns:local="clr-namespace:location"
              Startup="Initialisation">
     <Application.Resources>
          
