@@ -15,23 +15,13 @@ using System.Windows.Shapes;
 namespace location
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for SetPage.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class SetPage : Page
     {
-        public MainWindow()
+        public SetPage(Frame mainFrame)
         {
             InitializeComponent();
-        }
-
-        private void Get_Click(object sender, RoutedEventArgs e)
-        {
-            mainFrame.Navigate(new GetPage(mainFrame));
-        }
-
-        private void Set_Click(object sender, RoutedEventArgs e)
-        {
-            mainFrame.Navigate(new SetPage(mainFrame));
         }
     }
 }

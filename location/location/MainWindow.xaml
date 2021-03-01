@@ -4,9 +4,16 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:location"
+        Background="#262742"
+        ResizeMode="NoResize"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        
+        Title="Location Server - UI" Height="500" Width="500">
+    <Grid Name="mainGrid">
+        <Rectangle Fill="#1a1a2e" HorizontalAlignment="Center"  Height="235" Margin="0,236,0,0" VerticalAlignment="Center" Width="497"/>
+        <Button Click="Get_Click" FontSize="16" Content="Get Location" HorizontalAlignment="Center" Background="Peru" Margin="0,130,0,0" VerticalAlignment="Top" Width="110" Height="35"/>
+        <Button Click="Set_Click" FontSize="16" Content="Set Location" HorizontalAlignment="Center" Background="Peru" Margin="0,0,0,130" VerticalAlignment="Bottom" Width="110" Height="35"/>
+        <Frame Name="mainFrame" NavigationUIVisibility="Hidden"/>
+
+
     </Grid>
 </Window>

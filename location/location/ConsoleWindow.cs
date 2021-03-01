@@ -4,14 +4,6 @@ using System.Net.Sockets;
 
 namespace location
 {
-    public enum Protocol
-    {
-        Whois,
-        HTTP9,
-        HTTP0,
-        HTTP1
-    }
-
     class ConsoleWindow
     {
         static Protocol currentProtocol = Protocol.Whois;

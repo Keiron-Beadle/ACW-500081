@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:location"
              Startup="Initialisation">
     <Application.Resources>
-         
+
     </Application.Resources>
 </Application>

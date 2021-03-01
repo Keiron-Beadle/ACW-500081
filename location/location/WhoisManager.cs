@@ -9,6 +9,12 @@ namespace location
         private static string person;
         private static string location = null;
         private static bool bPOST = false;
+
+        public static string CreateRequest(string person)
+        {
+            return CreateRequest(person, null);
+        }
+
         public static string CreateRequest(string person, string location)
         {
             WhoisManager.person = person;
