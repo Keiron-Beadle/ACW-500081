@@ -10,11 +10,6 @@ namespace location
         private static string location;
         private static bool bPOST = false;
 
-        public static string CreateRequest(Protocol protocol, string person, string address)
-        {
-            return CreateRequest(protocol, person, null, address);
-        }
-
         public static string CreateRequest(Protocol protocol, string person, string location, string address)
         {
             HttpManager.protocol = protocol;

@@ -10,16 +10,11 @@ namespace location
         private static string location = null;
         private static bool bPOST = false;
 
-        public static string CreateRequest(string person)
-        {
-            return CreateRequest(person, null);
-        }
-
         public static string CreateRequest(string person, string location)
         {
             WhoisManager.person = person;
             WhoisManager.location = location;
-            if (location == null) { return person + "\r\n"; }
+            if (string.IsNullOrEmpty(WhoisManager.location)) { return person + "\r\n"; }
             else { bPOST = true; return person + ' ' + location + "\r\n"; }
         }
 

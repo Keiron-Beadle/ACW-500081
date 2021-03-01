@@ -56,15 +56,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="GetPage.xaml.cs">
-      <DependentUpon>GetPage.xaml</DependentUpon>
+    <Compile Include="RequestPage.xaml.cs">
+      <DependentUpon>RequestPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="ProtocolEnum.cs" />
-    <Compile Include="SetPage.xaml.cs">
-      <DependentUpon>SetPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="WhoisManager.cs" />
-    <Page Include="GetPage.xaml">
+    <Page Include="RequestPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -82,10 +79,6 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="SetPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

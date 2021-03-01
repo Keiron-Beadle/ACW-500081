@@ -26,12 +26,12 @@ namespace location
 
         private void Get_Click(object sender, RoutedEventArgs e)
         {
-            mainFrame.Navigate(new GetPage(mainFrame));
+            mainFrame.Navigate(new RequestPage(mainFrame, false));
         }
 
         private void Set_Click(object sender, RoutedEventArgs e)
         {
-            mainFrame.Navigate(new SetPage(mainFrame));
+            mainFrame.Navigate(new RequestPage(mainFrame, true));
         }
     }
 }

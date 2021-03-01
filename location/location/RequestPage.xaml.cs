@@ -16,25 +16,28 @@ using System.Windows.Shapes;
 
 namespace location
 {
-    /// <summary>
-    /// Interaction logic for GetPage.xaml
-    /// </summary>
-    public partial class GetPage : Page
+    public partial class RequestPage : Page
     {
         Frame frame;
         Protocol protocol;
-        string address, person;
+        string address, person, location;
 
-        public GetPage(Frame mainFrame)
+        public RequestPage(Frame mainFrame, bool getOrSet)
         {
-            frame = mainFrame;
             InitializeComponent();
+            if (getOrSet)
+            {
+                locationLbl.Visibility = Visibility.Visible;
+                locationTxt.Visibility = Visibility.Visible;
+            }
+            frame = mainFrame;
         }
 
         private void Submit_Click(object sender, RoutedEventArgs e)
         {
             outputTxt.Text = "";
             person = usernameTxt.Text;
+            location = locationTxt.Text;
             address = addressTxt.Text;
             int port = 0;
             try { port = int.Parse(portTxt.Text); }
@@ -46,7 +49,7 @@ namespace location
 
             bool debug = (bool)debugCheckBox.IsChecked;
 
-            switch (protocolCombo.SelectedValue)
+            switch (protocolCombo.SelectionBoxItem)
             {
                 case "Whois":
                     protocol = Protocol.Whois;
@@ -84,6 +87,13 @@ namespace location
                 outputTxt.Text += response;
             }
             catch (IOException) { outputTxt.Text += "Request timed out. Disconnecting..."; client.Close(); }
+            if (outputTxt.Height > outputTxt.MaxHeight)
+            {
+                while (outputTxt.Height > outputTxt.MaxHeight)
+                {
+                    outputTxt.FontSize--;
+                }
+            }
         }
 
         private string SendRequest(NetworkStream ns)
@@ -92,12 +102,12 @@ namespace location
             switch (protocol)
             {
                 case Protocol.Whois:
-                    request = WhoisManager.CreateRequest(person);
+                    request = WhoisManager.CreateRequest(person, location);
                     break;
                 case Protocol.HTTP9:
                 case Protocol.HTTP0:
                 case Protocol.HTTP1:
-                    request = HttpManager.CreateRequest(protocol, person, address);
+                    request = HttpManager.CreateRequest(protocol, person, location, address);
                     break;
             }
             ns.Write(Encoding.ASCII.GetBytes(request), 0, request.Length);
