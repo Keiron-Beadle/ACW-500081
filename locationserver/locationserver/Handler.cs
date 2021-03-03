@@ -1,14 +1,86 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace locationserver
 {
     class RequestHandler
     {
         private Protocol currentProtocol = Protocol.Whois;
+        private TextBox handleToUIOutput;
+
+        public void AcceptClient(Socket connection, TextBox handleToOutput)
+        {
+            handleToUIOutput = handleToOutput;
+            //System.Diagnostics.Stopwatch s = new System.Diagnostics.Stopwatch();
+            //s.Start();
+            NetworkStream socketStream;
+            Utility.UpdateUIText(handleToOutput,"Connection accepted...\r\n");
+            socketStream = new NetworkStream(connection)
+            {
+                ReadTimeout = Utility.timeout
+            };
+            string request = ReadRequest(socketStream);
+            if (Utility.bDebug)
+                Utility.UpdateUIText(handleToOutput,"Request recevied from " + connection.RemoteEndPoint + "...\r\n");
+            else
+                Utility.UpdateUIText(handleToOutput,"Request received...\r\n");
+            byte[] response;
+            string action = "";
+            if (currentProtocol == Protocol.Whois)
+            {
+                WhoisManager manager = new WhoisManager();
+                response = manager.CreateResponse(request, Utility.locationDict, ref action);
+            }
+            else
+            {
+                HttpManager manager = new HttpManager();
+                response = manager.CreateResponse(currentProtocol, request, Utility.locationDict, ref action);
+            }
+            socketStream.Write(response, 0, response.Length);
+            //s.Stop();
+            //Console.WriteLine("pre flush: " + s.ElapsedMilliseconds + "ms / " + s.ElapsedTicks + " ticks");
+            socketStream.Flush();
+            if (Utility.bDebug)
+            {
+                string responseStr = Encoding.ASCII.GetString(response);
+                responseStr = responseStr.Substring(0, response.Length - 4);
+                Utility.UpdateUIText(handleToOutput,"Responded: " + responseStr + " to " + connection.RemoteEndPoint + "\r\n");
+            }
+            Random rnd = new Random();
+            bool successfulWrite = false;
+            if (Utility.bLog && Utility.bHasLogWritePerm)
+            {
+                do
+                {
+                    string dataEntry = connection.RemoteEndPoint + " - - [" + DateTime.Now.ToString("dd/MMM/yyyy:HH:mm:ss +zzz") + "] " + action;
+                    try
+                    {
+                        using (StreamWriter sw = new StreamWriter(Utility.logDir, true))
+                        {
+                            sw.WriteLine(dataEntry);
+                            successfulWrite = true;
+                        }
+                    }
+                    catch
+                    {
+                        Thread.Sleep(rnd.Next(50, 500));
+                    }
+                } while (!successfulWrite);
+
+            }
+
+            socketStream.Close();
+            connection.Close();
+        }
 
         public void AcceptClient(Socket connection)
         {
@@ -18,10 +90,10 @@ namespace locationserver
             Console.WriteLine("Connection accepted...");
             socketStream = new NetworkStream(connection)
             {
-                ReadTimeout = locationserver.timeout
+                ReadTimeout = Utility.timeout
             };
             string request = ReadRequest(socketStream);
-            if (locationserver.bDebug)
+            if (Utility.bDebug)
                 Console.WriteLine("Request recevied from " + connection.RemoteEndPoint + "...");
             else
                 Console.WriteLine("Request received...");
@@ -31,31 +103,31 @@ namespace locationserver
             if (currentProtocol == Protocol.Whois)
             {
                 WhoisManager manager = new WhoisManager();
-                response = manager.CreateResponse(request, locationserver.locationDict, ref action);
+                response = manager.CreateResponse(request, Utility.locationDict, ref action);
             }
             else
             {
                 HttpManager manager = new HttpManager();
-                response = manager.CreateResponse(currentProtocol, request, locationserver.locationDict, ref action);
+                response = manager.CreateResponse(currentProtocol, request, Utility.locationDict, ref action);
             }
             socketStream.Write(response, 0, response.Length);
             //s.Stop();
             //Console.WriteLine("pre flush: " + s.ElapsedMilliseconds + "ms / " + s.ElapsedTicks + " ticks");
             socketStream.Flush();
-            if (locationserver.bDebug)
+            if (Utility.bDebug)
             {
                 Console.WriteLine("Responded: " + action + " to " + connection.RemoteEndPoint);
             }
             Random rnd = new Random();
             bool successfulWrite = false;
-            if (locationserver.bLog && locationserver.bHasLogWritePerm)
+            if (Utility.bLog && Utility.bHasLogWritePerm)
             {
                 do
                 {
                     string dataEntry = connection.RemoteEndPoint + " - - [" + DateTime.Now.ToString("dd/MMM/yyyy:HH:mm:ss +zzz") + "] " + action;
                     try
                     {
-                        using (StreamWriter sw = new StreamWriter(locationserver.logDir, true))
+                        using (StreamWriter sw = new StreamWriter(Utility.logDir, true))
                         {
                             sw.WriteLine(dataEntry);
                             successfulWrite = true;
@@ -63,7 +135,7 @@ namespace locationserver
                     }
                     catch
                     {
-                        System.Threading.Thread.Sleep(rnd.Next(50, 500));
+                        Thread.Sleep(rnd.Next(50, 500));
                     }
                 } while (!successfulWrite);
 
@@ -134,4 +206,3 @@ namespace locationserver
         }
     }
 }
-

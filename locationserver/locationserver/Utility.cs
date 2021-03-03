@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace locationserver
 {
@@ -20,75 +23,23 @@ namespace locationserver
         HTTP1
     }
 
-    class locationserver
+    class Utility
     {
-        [DllImport("Kernel32")]
-        private static extern bool SetConsoleCtrlHandler(SetConsoleMsgEventHandler handler, bool add);
-
-        private delegate bool SetConsoleMsgEventHandler(CtrlType msg);
-
-        private enum CtrlType
-        {
-            CTRL_C_EVENT,
-            CTRL_BREAK_EVENT,
-            CTRL_CLOSE_EVENT,
-            CTRL_LOGOFF_EVENT,
-            CTRL_SHUTDOWN_EVENT
-        }
 
         public static Dictionary<string, string> locationDict;
-        static int port = 43;
-        static readonly string[] flags = { "-p", "-t", "-d", "-l", "-f" };
+        private static TcpListener server;
+        public static int port = 43;
         public static bool bDebug = false;
         public static bool bHasLogWritePerm = false;
         public static int timeout = 1000;
         public static string databaseDir = "";
         public static string logDir = "";
         public static bool bDatabase = false;
-        static bool bDatabaseWriteAccess = false, bDatabaseReadAccess = false;
+        public static bool bDatabaseWriteAccess = false, bDatabaseReadAccess = false;
         public static bool bLog = false;
+        public static readonly string[] flags = { "-p", "-t", "-d", "-l", "-f" };
 
-        static void Main(string[] args)
-        {
-            ProcessArguments(args);
-            CheckIfPortOpen();
-            OnLoad();
-            RunServer();
-        }
-
-        private static void CheckIfPortOpen()
-        {
-            bool available = true;
-            int attemptCount = 0;
-            do
-            {
-                if (attemptCount > 10)
-                {
-                    Console.WriteLine("Connection failed after 10 tries, closing server...");
-                    Thread.Sleep(800);
-                    Environment.Exit(0);
-                }
-                IPGlobalProperties globalProperties = IPGlobalProperties.GetIPGlobalProperties();
-                IPEndPoint[] tcpInfo = globalProperties.GetActiveTcpListeners();
-
-                foreach (IPEndPoint e in tcpInfo)
-                {
-                    if (e.Port == port)
-                    {
-                        Console.WriteLine("Port in use by other server, waiting 500ms...");
-                        available = false;
-                        attemptCount++;
-                        Thread.Sleep(500);
-                        break;
-                    }
-                    available = true;
-                }
-            } while (!available);
-
-
-        }
-
-        private static void OnLoad()
+        public static void OnLoad()
         {
             locationDict = new Dictionary<string, string>();
             if (bLog)
@@ -146,7 +97,7 @@ namespace locationserver
             }
         }
 
-        private static void OnExit()
+        public static void OnExit()
         {
             if (!bDatabase || !bDatabaseWriteAccess) { Environment.Exit(0); }
             StringBuilder sb = new StringBuilder(128);
@@ -172,93 +123,41 @@ namespace locationserver
             }
         }
 
-        private static void RunServer()
+        public static void RunServer(TextBox handleToUIText)
         {
-            SetConsoleCtrlHandler(ConsoleExitHandler, true);
             RequestHandler requestHandler;
             IPAddress localIP = IPAddress.Parse("127.0.0.1");
-            TcpListener server = new TcpListener(localIP, port);
+            server = new TcpListener(localIP, port);
+            CheckIfPortOpen(handleToUIText);
             server.Start();
-            Console.WriteLine("Server started...");
+            UpdateUIText(handleToUIText, "Server started...\r\n");
             while (true)
             {
-                Socket connection = server.AcceptSocket();
+                Socket connection;
+                try
+                {
+                    connection = server.AcceptSocket();
+                }
+                catch { return; }
                 requestHandler = new RequestHandler();
-                //Change visual studio development settings to get more performance in threads. 
-                Thread t = new Thread(() => requestHandler.AcceptClient(connection));
+                Thread t = new Thread(() => requestHandler.AcceptClient(connection, handleToUIText));
                 t.Start();
             }
         }
 
-        private static void ProcessArguments(string[] args)
+        public static void RunServer()
         {
-            for (int argIndex = 0; argIndex < args.Length; argIndex++)
+            RequestHandler requestHandler;
+            IPAddress localIP = IPAddress.Parse("127.0.0.1");
+            server = new TcpListener(localIP, port);
+            server.Start();
+            while (true)
             {
-                bool cFlag = false;
-                foreach (string flag in flags)
-                {
-                    if (flag == args[argIndex])
-                    {
-                        ProcessArgument(args, flag, ref argIndex);
-                        cFlag = true;
-                        break;
-                    }
-                }
-                if (cFlag) { continue; }
+                Socket connection = server.AcceptSocket();
+                requestHandler = new RequestHandler();
+                Thread t = new Thread(() => requestHandler.AcceptClient(connection));
+                t.Start();
             }
-        }
-
-        private static void ProcessArgument(string[] args, string command, ref int index)
-        {
-            switch (command)
-            {
-                case "-p":
-                    try { port = int.Parse(args[index + 1]); }
-                    catch (IndexOutOfRangeException) { Console.WriteLine("You must enter a port number after the -p argument. -p is optional for port 43."); Exit(); }
-                    catch (FormatException) { Console.WriteLine("Please provide a valid integer port argument."); Exit(); }
-                    index++;
-                    break;
-                case "-t":
-                    try { timeout = int.Parse(args[index + 1]); }
-                    catch (IndexOutOfRangeException) { Console.WriteLine("You must enter a timeout number after the -t argument."); Exit(); }
-                    catch (FormatException) { Console.WriteLine("Please provide a valid integer timeout argument."); Exit(); }
-                    index++;
-                    break;
-                case "-d":
-                    bDebug = true;
-                    break;
-                case "-f":
-                    try 
-                    { 
-                        databaseDir = args[index + 1];
-                    }
-                    catch (IndexOutOfRangeException)
-                    {
-                        databaseDir = Directory.GetCurrentDirectory() + "/database.db";
-                    }
-                    bDatabase = true;
-                    index++;
-                    break;
-                case "-l":
-                    try
-                    { 
-                        logDir = args[index + 1];
-                    }
-                    catch (IndexOutOfRangeException)
-                    {
-                        logDir = Directory.GetCurrentDirectory() + "server.log";
-                    }
-                    bLog = true;
-                    index++;
-                    break;
-            }
-        }
-
-        private static void Exit()
-        {
-            Console.WriteLine("Closing in 3 seconds.");
-            Thread.Sleep(3000);
-            Environment.Exit(0);
         }
 
         public static bool HasReadPermissions(string directory)
@@ -307,25 +206,118 @@ namespace locationserver
 
         }
 
-        private static bool ConsoleExitHandler(CtrlType msg)
+        public static void CheckIfPortOpen(TextBox HandleToUI = null)
         {
-            switch (msg)
+            bool available = true;
+            int attemptCount = 0;
+            do
             {
-                case CtrlType.CTRL_BREAK_EVENT:
-                case CtrlType.CTRL_C_EVENT:
-                case CtrlType.CTRL_LOGOFF_EVENT:
-                case CtrlType.CTRL_SHUTDOWN_EVENT:
-                case CtrlType.CTRL_CLOSE_EVENT:
-                    if (bDatabase)
+                if (attemptCount > 10)
+                {
+                    Console.WriteLine("Connection failed after 10 tries, closing server...");
+                    if (HandleToUI != null) { UpdateUIText(HandleToUI, "Connection failed after 10 tries, closing server...\r\n"); }
+                    Thread.Sleep(800);
+                    Environment.Exit(0);
+                }
+                IPGlobalProperties globalProperties = IPGlobalProperties.GetIPGlobalProperties();
+                IPEndPoint[] tcpInfo = globalProperties.GetActiveTcpListeners();
+
+                foreach (IPEndPoint e in tcpInfo)
+                {
+                    if (e.Port == port)
                     {
-                        Console.WriteLine("Saving database...");
-                        OnExit();
+                        Console.WriteLine("Port in use by other server, waiting 500ms...");
+                        if (HandleToUI != null) { UpdateUIText(HandleToUI, "Port in use by other server, waiting 500ms...\r\n"); }
+                        available = false;
+                        attemptCount++;
+                        Thread.Sleep(500);
+                        break;
                     }
-                    return false;
-                default:
-                    return false;
+                    available = true;
+                }
+            } while (!available);
+
+
+        }
+
+        public static void ProcessArguments(string[] args)
+        {
+            for (int argIndex = 0; argIndex < args.Length; argIndex++)
+            {
+                bool cFlag = false;
+                foreach (string flag in flags)
+                {
+                    if (flag == args[argIndex])
+                    {
+                        ProcessArgument(args, flag, ref argIndex);
+                        cFlag = true;
+                        break;
+                    }
+                }
+                if (cFlag) { continue; }
             }
         }
-    }
 
+        private static void ProcessArgument(string[] args, string command, ref int index)
+        {
+            switch (command)
+            {
+                case "-p":
+                    try { port = int.Parse(args[index + 1]); }
+                    catch (IndexOutOfRangeException) { Console.WriteLine("You must enter a port number after the -p argument. -p is optional for port 43."); Exit(); }
+                    catch (FormatException) { Console.WriteLine("Please provide a valid integer port argument."); Exit(); }
+                    index++;
+                    break;
+                case "-t":
+                    try { timeout = int.Parse(args[index + 1]); }
+                    catch (IndexOutOfRangeException) { Console.WriteLine("You must enter a timeout number after the -t argument."); Exit(); }
+                    catch (FormatException) { Console.WriteLine("Please provide a valid integer timeout argument."); Exit(); }
+                    index++;
+                    break;
+                case "-d":
+                    bDebug = true;
+                    break;
+                case "-f":
+                    try
+                    {
+                        databaseDir = args[index + 1];
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        databaseDir = Directory.GetCurrentDirectory() + "/database.db";
+                    }
+                    bDatabase = true;
+                    index++;
+                    break;
+                case "-l":
+                    try
+                    {
+                        logDir = args[index + 1];
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        logDir = Directory.GetCurrentDirectory() + "server.log";
+                    }
+                    bLog = true;
+                    index++;
+                    break;
+            }
+        }
+
+        public static void UpdateUIText(TextBox UIToUpdate, string s)
+        {
+            UIToUpdate.Dispatcher.Invoke(() =>
+            {
+                UIToUpdate.AppendText(s);
+                UIToUpdate.ScrollToEnd();
+            });
+        }
+
+        public static void CloseServer()
+        {
+            server.Server.Close();
+        }
+
+        public static void Exit(int exitCode = 0) { Environment.Exit(exitCode); }
+    }
 }
