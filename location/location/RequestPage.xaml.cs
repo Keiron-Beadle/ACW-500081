@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -35,21 +36,50 @@ namespace location
 
         private void Submit_Click(object sender, RoutedEventArgs e)
         {
-            outputTxt.Text = "";
-            person = usernameTxt.Text;
-            location = locationTxt.Text;
-            address = addressTxt.Text;
+            BackgroundWorker bw = new BackgroundWorker();
+            bw.DoWork += WorkerThread;
+            bw.RunWorkerAsync(e);
+        }
+
+        private void WorkerThread(object sender, DoWorkEventArgs e)
+        {
+            Dispatcher.Invoke(new Action(() =>
+            {
+                outputTxt.Text = "";
+                person = usernameTxt.Text;
+                location = locationTxt.Text;
+                address = addressTxt.Text;
+            }));
+
             int port = 0;
-            try { port = int.Parse(portTxt.Text); }
+            try 
+            {
+                Dispatcher.Invoke(new Action(() =>
+                {
+                    port = int.Parse(portTxt.Text);
+                }));
+            }
             catch { MessageBox.Show("Please enter an integer value for the port number! Default: 43", "Error", MessageBoxButton.OK); return; }
 
             int timeout = 0;
-            try { timeout = int.Parse(timeoutTxt.Text); }
+            try 
+            {
+                Dispatcher.Invoke(new Action(() =>
+                {
+                    timeout = int.Parse(timeoutTxt.Text);
+                }));
+            }
             catch { MessageBox.Show("Please enter an integer value for the timeout! Default: 1000", "Error", MessageBoxButton.OK); return; }
 
-            bool debug = (bool)debugCheckBox.IsChecked;
+            bool debug = false;
+            string selectedProtocol = "";
+            Dispatcher.Invoke(new Action(() =>
+            {
+                debug = (bool)debugCheckBox.IsChecked;
+                selectedProtocol = protocolCombo.SelectionBoxItem.ToString();
+            }));
 
-            switch (protocolCombo.SelectionBoxItem)
+            switch (selectedProtocol)
             {
                 case "Whois":
                     protocol = Protocol.Whois;
@@ -67,14 +97,18 @@ namespace location
 
             TcpClient client = new TcpClient(address, port);
             if (timeout > 0) { client.ReceiveTimeout = timeout; }
+            else { client.ReceiveTimeout = 0; }
             NetworkStream ns = client.GetStream();
 
             string request = SendRequest(ns);
             if (debug)
             {
-                outputTxt.Text += "Connected to: " + client.Client.RemoteEndPoint + "\r\n";
-                outputTxt.Text += "Timeout set to: " + client.ReceiveTimeout + "ms" + "\r\n";
-                outputTxt.Text += "Sent Request: " + request + "\r\n";
+                Dispatcher.Invoke(new Action(() =>
+                {
+                    outputTxt.Text += "Connected to: " + client.Client.RemoteEndPoint + "\r\n";
+                    outputTxt.Text += "Timeout set to: " + client.ReceiveTimeout + "ms" + "\r\n";
+                    outputTxt.Text += "Sent Request: " + request + "\r\n";
+                }));
             }
 
             try
@@ -83,17 +117,37 @@ namespace location
                 sw.Start();
                 string response = HandleResponse(ns);
                 sw.Stop();
-                if (debug) { outputTxt.Text += "Time for response: " + sw.ElapsedMilliseconds + "ms\r\n"; }
-                outputTxt.Text += response;
-            }
-            catch (IOException) { outputTxt.Text += "Request timed out. Disconnecting..."; client.Close(); }
-            if (outputTxt.Height > outputTxt.MaxHeight)
-            {
-                while (outputTxt.Height > outputTxt.MaxHeight)
+                if (debug) 
                 {
-                    outputTxt.FontSize--;
+                    Dispatcher.Invoke(new Action(() =>
+                    {
+                        outputTxt.Text += "Time for response: " + sw.ElapsedMilliseconds + "ms\r\n";
+                    }));
                 }
+                Dispatcher.Invoke(new Action(() =>
+                {
+                    outputTxt.Text += response;
+                }));
             }
+            //catch (IOException n) { outputTxt.Text += n.Message; client.Close(); }
+            catch (IOException) 
+            {
+                Dispatcher.Invoke(new Action(() =>
+                {
+                    outputTxt.Text += "Request timed out. Disconnecting..."; client.Close();
+                }));
+            }
+            Dispatcher.Invoke(new Action(() =>
+            {
+                if (outputTxt.Height > outputTxt.MaxHeight)
+                {
+                    while (outputTxt.Height > outputTxt.MaxHeight)
+                    {
+                        outputTxt.FontSize--;
+                    }
+                }
+            }));
+
         }
 
         private string SendRequest(NetworkStream ns)

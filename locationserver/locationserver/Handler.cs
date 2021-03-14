@@ -12,155 +12,176 @@ using System.Windows.Threading;
 
 namespace locationserver
 {
+    public class SocketStateObject
+    {
+        public Socket socket = null;
+        public const int BufferSize = 512;
+        public byte[] buffer = new byte[BufferSize];
+        public StringBuilder sb = new StringBuilder();
+        public string request;
+    }
     class RequestHandler
     {
         private Protocol currentProtocol = Protocol.Whois;
         private TextBox handleToUIOutput;
+        ManualResetEvent readReset = new ManualResetEvent(false);
+        ManualResetEvent writeReset = new ManualResetEvent(false);
 
-        public void AcceptClient(Socket connection, TextBox handleToOutput)
+        public async void HandleClient(Socket connection, TextBox handleToOutput)
         {
-            handleToUIOutput = handleToOutput;
-            //System.Diagnostics.Stopwatch s = new System.Diagnostics.Stopwatch();
-            //s.Start();
-            NetworkStream socketStream;
-            Utility.UpdateUIText(handleToOutput,"Connection accepted...\r\n");
-            socketStream = new NetworkStream(connection)
-            {
-                ReadTimeout = Utility.timeout
-            };
-            string request = ReadRequest(socketStream);
-            if (Utility.bDebug)
-                Utility.UpdateUIText(handleToOutput,"Request recevied from " + connection.RemoteEndPoint + "...\r\n");
-            else
-                Utility.UpdateUIText(handleToOutput,"Request received...\r\n");
-            byte[] response;
-            string action = "";
-            if (currentProtocol == Protocol.Whois)
-            {
-                WhoisManager manager = new WhoisManager();
-                response = manager.CreateResponse(request, Utility.locationDict, ref action);
-            }
-            else
-            {
-                HttpManager manager = new HttpManager();
-                response = manager.CreateResponse(currentProtocol, request, Utility.locationDict, ref action);
-            }
-            socketStream.Write(response, 0, response.Length);
-            //s.Stop();
-            //Console.WriteLine("pre flush: " + s.ElapsedMilliseconds + "ms / " + s.ElapsedTicks + " ticks");
-            socketStream.Flush();
-            if (Utility.bDebug)
-            {
-                string responseStr = Encoding.ASCII.GetString(response);
-                responseStr = responseStr.Substring(0, response.Length - 4);
-                Utility.UpdateUIText(handleToOutput,"Responded: " + responseStr + " to " + connection.RemoteEndPoint + "\r\n");
-            }
-            Random rnd = new Random();
-            bool successfulWrite = false;
-            if (Utility.bLog && Utility.bHasLogWritePerm)
-            {
-                do
-                {
-                    string dataEntry = connection.RemoteEndPoint + " - - [" + DateTime.Now.ToString("dd/MMM/yyyy:HH:mm:ss +zzz") + "] " + action;
-                    try
-                    {
-                        using (StreamWriter sw = new StreamWriter(Utility.logDir, true))
-                        {
-                            sw.WriteLine(dataEntry);
-                            successfulWrite = true;
-                        }
-                    }
-                    catch
-                    {
-                        Thread.Sleep(rnd.Next(50, 500));
-                    }
-                } while (!successfulWrite);
+            //handleToUIOutput = handleToOutput;
+            //NetworkStream socketStream;
+            //Utility.UpdateUIText(handleToOutput,"Connection accepted...\r\n");
+            //socketStream = new NetworkStream(connection)
+            //{
+            //    ReadTimeout = Utility.timeout
+            //};
+            //string request = ReadRequest();
+            //if (Utility.bDebug)
+            //    Utility.UpdateUIText(handleToOutput,"Request recevied from " + connection.RemoteEndPoint + "...\r\n");
+            //else
+            //    Utility.UpdateUIText(handleToOutput,"Request received...\r\n");
+            //byte[] response;
+            //string action = "";
+            //if (currentProtocol == Protocol.Whois)
+            //{
+            //    WhoisManager manager = new WhoisManager();
+            //    response = manager.CreateResponse(request, Utility.locationDict, ref action);
+            //}
+            //else
+            //{
+            //    HttpManager manager = new HttpManager();
+            //    response = manager.CreateResponse(currentProtocol, request, Utility.locationDict, ref action);
+            //}
+            //await socketStream.WriteAsync(response, 0, response.Length);
+            //await socketStream.FlushAsync();
+            //if (Utility.bDebug)
+            //{
+            //    string responseStr = Encoding.ASCII.GetString(response);
+            //    responseStr = responseStr.Substring(0, response.Length - 4);
+            //    Utility.UpdateUIText(handleToOutput,"Responded: " + responseStr + " to " + connection.RemoteEndPoint + "\r\n");
+            //}
+            //Random rnd = new Random();
+            //bool successfulWrite = false;
+            //if (Utility.bLog && Utility.bHasLogWritePerm)
+            //{
+            //    do
+            //    {
+            //        string dataEntry = connection.RemoteEndPoint + " - - [" + DateTime.Now.ToString("dd/MMM/yyyy:HH:mm:ss +zzz") + "] " + action;
+            //        try
+            //        {
+            //            using (StreamWriter sw = new StreamWriter(Utility.logDir, true))
+            //            {
+            //                sw.WriteLine(dataEntry);
+            //                successfulWrite = true;
+            //            }
+            //        }
+            //        catch
+            //        {
+            //            Thread.Sleep(rnd.Next(50, 500));
+            //        }
+            //    } while (!successfulWrite);
 
-            }
+            //}
 
-            socketStream.Close();
-            connection.Close();
+            //socketStream.Close();
+            //connection.Close();
         }
 
-        public void AcceptClient(Socket connection)
+        public void HandleClient(Socket connection)
         {
-            //System.Diagnostics.Stopwatch s = new System.Diagnostics.Stopwatch();
-            //s.Start();
-            NetworkStream socketStream;
-            Console.WriteLine("Connection accepted...");
-            socketStream = new NetworkStream(connection)
-            {
-                ReadTimeout = Utility.timeout
-            };
-            string request = ReadRequest(socketStream);
-            if (Utility.bDebug)
-                Console.WriteLine("Request recevied from " + connection.RemoteEndPoint + "...");
-            else
-                Console.WriteLine("Request received...");
-            //Console.WriteLine(request.Replace('\r', '0').Replace('\n', '0'));
-            byte[] response;
-            string action = "";
-            if (currentProtocol == Protocol.Whois)
-            {
-                WhoisManager manager = new WhoisManager();
-                response = manager.CreateResponse(request, Utility.locationDict, ref action);
-            }
-            else
-            {
-                HttpManager manager = new HttpManager();
-                response = manager.CreateResponse(currentProtocol, request, Utility.locationDict, ref action);
-            }
-            socketStream.Write(response, 0, response.Length);
-            //s.Stop();
-            //Console.WriteLine("pre flush: " + s.ElapsedMilliseconds + "ms / " + s.ElapsedTicks + " ticks");
-            socketStream.Flush();
-            if (Utility.bDebug)
-            {
-                Console.WriteLine("Responded: " + action + " to " + connection.RemoteEndPoint);
-            }
-            Random rnd = new Random();
-            bool successfulWrite = false;
-            if (Utility.bLog && Utility.bHasLogWritePerm)
-            {
-                do
-                {
-                    string dataEntry = connection.RemoteEndPoint + " - - [" + DateTime.Now.ToString("dd/MMM/yyyy:HH:mm:ss +zzz") + "] " + action;
-                    try
-                    {
-                        using (StreamWriter sw = new StreamWriter(Utility.logDir, true))
-                        {
-                            sw.WriteLine(dataEntry);
-                            successfulWrite = true;
-                        }
-                    }
-                    catch
-                    {
-                        Thread.Sleep(rnd.Next(50, 500));
-                    }
-                } while (!successfulWrite);
+            SocketStateObject SSO = new SocketStateObject();
+            SSO.socket = connection;
+            //Console.WriteLine("Connection accepted...");
+            connection.BeginReceive(SSO.buffer, 0, SocketStateObject.BufferSize, 0,
+                 new AsyncCallback(ReadCallback), SSO);
+            //if (Utility.bDebug)
+            //    Console.WriteLine("Request recevied from " + connection.RemoteEndPoint + "...");
+            //else
+            //    Console.WriteLine("Request received...");
 
-            }
+            //connection.Send(response);
+            //if (Utility.bDebug)
+            //{
+            //    Console.WriteLine("Responded: " + action + " to " + connection.RemoteEndPoint);
+            //}
+            //Random rnd = new Random();
+            //bool successfulWrite = false;
+            //if (Utility.bLog && Utility.bHasLogWritePerm)
+            //{
+            //    do
+            //    {
+            //        string dataEntry = connection.RemoteEndPoint + " - - [" + DateTime.Now.ToString("dd/MMM/yyyy:HH:mm:ss +zzz") + "] " + action;
+            //        try
+            //        {
+            //            using (StreamWriter sw = new StreamWriter(Utility.logDir, true))
+            //            {
+            //                sw.WriteLine(dataEntry);
+            //                successfulWrite = true;
+            //            }
+            //        }
+            //        catch
+            //        {
+            //            Thread.Sleep(rnd.Next(50, 500));
+            //        }
+            //    } while (!successfulWrite);
 
-            socketStream.Close();
-            connection.Close();
+            //}
+
+            //connection.Close();
         }
 
-        private string ReadRequest(NetworkStream ns)
+        private void ReadRequest(Socket connection, SocketStateObject pSSO)
         {
-            int bytes;
-            StringBuilder requestSB = new StringBuilder();
-            byte[] data;
-            while (true)
-            {
-                data = new byte[512];
-                try { bytes = ns.Read(data, 0, data.Length); }
-                catch (IOException) { break; }
+            //int bytes = 0;
+            //byte[] data;
+            //while (true)
+            //{
+            //    data = new byte[256];
+            //    try { bytes = connection.Receive(data); }
+            //    catch (IOException) { }
+            //    pSSO.sb.Append(Encoding.ASCII.GetString(data));
+            //    if (bytes < 512) { break; }
+            // }
+            connection.BeginReceive(pSSO.buffer, 0, SocketStateObject.BufferSize, 0,
+                 new AsyncCallback(ReadCallback), pSSO);
+            //readReset.WaitOne();
+            //pSSO.sb.Replace("\0", "");
+            //string request = pSSO.sb.ToString();
+            //DeduceProtocol(request);
+            //if (currentProtocol == Protocol.HTTP1)
+            //{
+            //    string[] headerArgs = request.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            //    for (int i = 0; i < headerArgs.Length; i++)
+            //    {
+            //        if (headerArgs[i].Substring(0, 3) == "GET")
+            //        {
+            //            return headerArgs[i];
+            //        }
+            //    }
+            //}
+            //return request;
+        }
 
-                requestSB.Append(Encoding.ASCII.GetString(data));
-                if (bytes < 512) { break; }
+        private void ReadCallback(IAsyncResult ar)
+        {
+            SocketStateObject sso = (SocketStateObject)ar.AsyncState;
+            Socket handler = sso.socket;
+            //readReset.Set();
+            int bytes = handler.EndReceive(ar);
+            if (bytes > 0)
+            {
+                sso.sb.Append(Encoding.ASCII.GetString(sso.buffer, 0, bytes));
+                string msg = sso.sb.ToString();
+                if (msg.Length == SocketStateObject.BufferSize)
+                {
+                    handler.BeginReceive(sso.buffer, 0, SocketStateObject.BufferSize, 0,
+                        new AsyncCallback(ReadCallback), sso);
+                }
             }
-            requestSB.Replace("\0", "");
-            string request = requestSB.ToString();
+
+            sso.sb.Replace("\0", "");
+            string request = sso.sb.ToString();
             DeduceProtocol(request);
             if (currentProtocol == Protocol.HTTP1)
             {
@@ -169,11 +190,44 @@ namespace locationserver
                 {
                     if (headerArgs[i].Substring(0, 3) == "GET")
                     {
-                        return headerArgs[i];
+                        sso.request = headerArgs[i];
                     }
                 }
             }
-            return request;
+            sso.request = request;
+
+            byte[] response;
+            string action = "";
+            if (currentProtocol == Protocol.Whois)
+            {
+                WhoisManager manager = new WhoisManager();
+                response = manager.CreateResponse(request, Utility.locationDict, ref action);
+            }
+            else
+            {
+                HttpManager manager = new HttpManager();
+                response = manager.CreateResponse(currentProtocol, request, Utility.locationDict, ref action);
+            }
+
+            sso.socket.BeginSend(response, 0, response.Length, 0, new AsyncCallback(WriteCallback), sso);
+        }
+
+        private void WriteCallback(IAsyncResult ar)
+        {
+            SocketStateObject sso = (SocketStateObject)ar.AsyncState;
+            Socket handler = sso.socket;
+            try
+            {
+                handler.EndSend(ar);
+            }
+            catch
+            {
+                Console.WriteLine("Error sending bytes");
+            }
+            finally
+            {
+                handler.Close();
+            }
         }
 
         private void DeduceProtocol(string request)
@@ -184,7 +238,10 @@ namespace locationserver
                 Regex getCheck = new Regex(@"GET \/([!-~])+(\r|\n|\r\n)");
                 Regex putCheck = new Regex(@"PUT \/([!-~])+(\r|\n|\r\n){2}([!-~]| )+(\r|\n|\r\n)");
                 if (getCheck.Matches(request).Count > 0 || putCheck.Matches(request).Count > 0)
-                    currentProtocol = Protocol.HTTP9; chosen = true;
+                {
+                    currentProtocol = Protocol.HTTP9;
+                    chosen = true;
+                }
             }
             catch { currentProtocol = Protocol.Whois; return; }
             string[] splitRequest = request.Split(new string[] { "\r\n" }, StringSplitOptions.None);

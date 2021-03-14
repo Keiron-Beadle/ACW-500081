@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ namespace locationserver
 {
     public class HttpManager
     {
-        public byte[] CreateResponse(Protocol protocol, string request, Dictionary<string, string> locationDict, ref string action)
+        public byte[] CreateResponse(Protocol protocol, string request, ConcurrentDictionary<string, string> locationDict, ref string action)
         {
             StringBuilder sb = new StringBuilder(32);
             switch (protocol)
@@ -23,7 +24,7 @@ namespace locationserver
             return new byte[2];
         }
 
-        private byte[] HandleHTTP1(string request, Dictionary<string, string> locationDict, ref string action, StringBuilder sb)
+        private byte[] HandleHTTP1(string request, ConcurrentDictionary<string, string> locationDict, ref string action, StringBuilder sb)
         {
             if (request.Substring(0, 3) == "GET")
             {
@@ -31,9 +32,11 @@ namespace locationserver
                 if (locationDict.ContainsKey(name))
                 {
                     sb.Append("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
-                    sb.Append(locationDict[name]);
+                    string locationElement;
+                    while (!locationDict.TryGetValue(name, out locationElement)) { }
+                    sb.Append(locationElement);
                     sb.Append("\r\n");
-                    action = "\"GET " + name + '"' + " Sent: " + locationDict[name];
+                    action = "\"GET " + name + '"' + " Sent: " + locationElement;
                     return Encoding.ASCII.GetBytes(sb.ToString());
                 }
                 else
@@ -52,11 +55,11 @@ namespace locationserver
                 string location = body.Split('=')[2];
                 if (locationDict.ContainsKey(name))
                 {
-                    locationDict[name] = location;
+                    while (!locationDict.TryUpdate(name, location, null)) { }            
                 }
                 else
                 {
-                    locationDict.Add(name, location);
+                    while (!locationDict.TryAdd(name, location)) { }
                 }
                 action = "\"POST " + name + ' ' + location + '"' + " Sent: OK";
                 return Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n");
@@ -65,7 +68,7 @@ namespace locationserver
             return new byte[2];
         }
 
-        private byte[] HandleHTTP0(string request, Dictionary<string, string> locationDict, ref string action, StringBuilder sb)
+        private byte[] HandleHTTP0(string request, ConcurrentDictionary<string, string> locationDict, ref string action, StringBuilder sb)
         {
             if (request.Substring(0, 3) == "GET")
             {
@@ -74,9 +77,11 @@ namespace locationserver
                 if (locationDict.ContainsKey(name))
                 {
                     sb.Append("HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n");
-                    sb.Append(locationDict[name]);
+                    string value;
+                    while (!locationDict.TryGetValue(name, out value)) { }
+                    sb.Append(value);
                     sb.Append("\r\n");
-                    action = "\"GET " + name + '"' + " Sent: " + locationDict[name];
+                    action = "\"GET " + name + '"' + " Sent: " + value;
                     return Encoding.ASCII.GetBytes(sb.ToString());
                 }
                 else
@@ -92,11 +97,11 @@ namespace locationserver
                 string name = split[0].Split('/')[1].Split(' ')[0];
                 if (locationDict.ContainsKey(name))
                 {
-                    locationDict[name] = location;
+                    while (!locationDict.TryUpdate(name, location, null)) { }            
                 }
                 else
                 {
-                    locationDict.Add(name, location);
+                    while (!locationDict.TryAdd(name, location)) { }
                 }
                 action = "\"POST " + name + ' ' + location + '"' + " Sent: OK";
                 return Encoding.ASCII.GetBytes("HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\n\r\n");
@@ -105,7 +110,7 @@ namespace locationserver
             return new byte[2];
         }
 
-        private byte[] HandleHTTP9(string request, Dictionary<string, string> locationDict, ref string action, StringBuilder sb)
+        private byte[] HandleHTTP9(string request, ConcurrentDictionary<string, string> locationDict, ref string action, StringBuilder sb)
         {
             if (request.Substring(0, 3) == "GET")
             {
@@ -116,9 +121,11 @@ namespace locationserver
                 if (locationDict.ContainsKey(name))
                 {
                     sb.Append("HTTP/0.9 200 OK\r\nContent-Type: text/plain\r\n\r\n");
-                    sb.Append(locationDict[name]);
+                    string value;
+                    while (!locationDict.TryGetValue(name, out value)) { }
+                    sb.Append(value);
                     sb.Append("\r\n");
-                    action = "\"GET " + name + '"' + " Sent: " + locationDict[name];
+                    action = "\"GET " + name + '"' + " Sent: " + value;
                     return Encoding.ASCII.GetBytes(sb.ToString());
                 }
                 else
@@ -135,11 +142,11 @@ namespace locationserver
                 string location = split[1];
                 if (locationDict.ContainsKey(name))
                 {
-                    locationDict[name] = location;
+                    while (!locationDict.TryUpdate(name, location, null)) { }
                 }
                 else
                 {
-                    locationDict.Add(name, location);
+                    while (!locationDict.TryAdd(name, location)) { }
                 }
                 action = "\"POST " + name + ' ' + location + '"' + " Sent: OK";
                 return Encoding.ASCII.GetBytes("HTTP/0.9 200 OK\r\nContent-Type: text/plain\r\n\r\n");

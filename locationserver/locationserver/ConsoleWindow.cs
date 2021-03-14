@@ -36,8 +36,10 @@ namespace locationserver
             Utility.CheckIfPortOpen();
             Utility.OnLoad();
             SetConsoleCtrlHandler(ConsoleExitHandler, true);
+            //Thread t = new Thread(() => { Utility.RunServer(); });
+            //t.Start();
+            //while (true) { }
             Utility.RunServer();
-            Console.WriteLine("Server started...");
         }
 
         private static bool ConsoleExitHandler(CtrlType msg)

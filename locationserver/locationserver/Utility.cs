@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -26,7 +27,7 @@ namespace locationserver
     class Utility
     {
 
-        public static Dictionary<string, string> locationDict;
+        public static ConcurrentDictionary<string, string> locationDict;
         private static TcpListener server;
         public static int port = 43;
         public static bool bDebug = false;
@@ -39,9 +40,11 @@ namespace locationserver
         public static bool bLog = false;
         public static readonly string[] flags = { "-p", "-t", "-d", "-l", "-f" };
 
+        public static ManualResetEvent resetEvent = new ManualResetEvent(false);
+
         public static void OnLoad()
         {
-            locationDict = new Dictionary<string, string>();
+            locationDict = new ConcurrentDictionary<string, string>();
             if (bLog)
                 SetLogWritePermission();
             if (bDatabase)
@@ -80,7 +83,7 @@ namespace locationserver
                     while (!string.IsNullOrEmpty(line = sr.ReadLine()))
                     {
                         string[] entry = line.Split(',');
-                        try { locationDict.Add(entry[0], entry[1]); }
+                        try { while (!locationDict.TryAdd(entry[0], entry[1])) { } }
                         catch { continue; }
                     }
                 }
@@ -125,39 +128,46 @@ namespace locationserver
 
         public static void RunServer(TextBox handleToUIText)
         {
-            RequestHandler requestHandler;
-            IPAddress localIP = IPAddress.Parse("127.0.0.1");
-            server = new TcpListener(localIP, port);
+            server = new TcpListener(IPAddress.Any, port);
             CheckIfPortOpen(handleToUIText);
             server.Start();
             UpdateUIText(handleToUIText, "Server started...\r\n");
             while (true)
             {
-                Socket connection;
-                try
-                {
-                    connection = server.AcceptSocket();
-                }
-                catch { return; }
-                requestHandler = new RequestHandler();
-                Thread t = new Thread(() => requestHandler.AcceptClient(connection, handleToUIText));
-                t.Start();
+                resetEvent.Reset();
+                UpdateUIText(handleToUIText, "Waiting for connection...");
+                server.BeginAcceptSocket(new AsyncCallback(AcceptCallback), server);
+                resetEvent.WaitOne();
             }
         }
 
+        static int count = 0;
         public static void RunServer()
         {
-            RequestHandler requestHandler;
-            IPAddress localIP = IPAddress.Parse("127.0.0.1");
-            server = new TcpListener(localIP, port);
+            server = new TcpListener(IPAddress.Any, port);
             server.Start();
+            Console.WriteLine("Server started...");
             while (true)
             {
-                Socket connection = server.AcceptSocket();
-                requestHandler = new RequestHandler();
-                Thread t = new Thread(() => requestHandler.AcceptClient(connection));
-                t.Start();
+                resetEvent.Reset();
+                Console.WriteLine("Waiting for connection" + ++count);
+                server.BeginAcceptSocket(new AsyncCallback(AcceptCallback), server.Server);
+                resetEvent.WaitOne();
             }
+        }
+
+        static void AcceptCallback(IAsyncResult ar)
+        {
+            resetEvent.Set();
+            RequestHandler requestHandler = new RequestHandler();
+            Socket listener = (Socket)ar.AsyncState;
+            Socket handler;
+            try
+            {
+                handler = listener.EndAccept(ar);
+            }
+            catch (ObjectDisposedException) { listener.Close(); return; }
+            requestHandler.HandleClient(handler);
         }
 
         public static bool HasReadPermissions(string directory)

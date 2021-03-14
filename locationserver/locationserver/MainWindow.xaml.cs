@@ -29,6 +29,7 @@ namespace locationserver
             Utility.CheckIfPortOpen();
             Utility.OnLoad();
             bw.DoWork += Work;
+
         }
 
         private void Start_Click(object o, RoutedEventArgs e)
